@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Garmin auth tokens (never commit credentials!)
+.garth/
+*.token
+.env
+
+# OS
+.DS_Store
+Thumbs.db
