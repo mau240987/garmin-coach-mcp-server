@@ -18,6 +18,6 @@ ENV GARTH_TOKEN_DIR=/data/garth
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/mcp')" || exit 1
+  CMD python -c "import urllib.request; r=urllib.request.Request('http://localhost:8000/mcp',method='POST',headers={'Content-Type':'application/json','Accept':'application/json, text/event-stream'},data=b'{\"jsonrpc\":\"2.0\",\"method\":\"ping\",\"id\":1}'); urllib.request.urlopen(r)" || exit 1
 
 ENTRYPOINT ["./entrypoint.sh"]
