@@ -22,21 +22,88 @@ Built on the battle-tested [garminconnect](https://github.com/cyberjunky/python-
 
 ---
 
-## Quick start
+## Setup
 
-### Option 1 — Docker (recommended)
+### Prerequisites
 
-The easiest way. One command to start, no Python setup needed.
-
-**First run** (authenticates and saves tokens):
+- Python 3.10+
+- A Garmin Connect account
+- A Garmin device (for workout sync)
 
 ```bash
-docker compose up -d \
-  -e GARMIN_EMAIL=your@email.com \
-  -e GARMIN_PASSWORD=yourpassword
+git clone https://github.com/mau240987/garmin-mcp-server.git
+cd garmin-mcp-server
+pip install -r requirements.txt
 ```
 
-Or without Compose:
+---
+
+## Option 1 — Claude Desktop / Claude Code (recommended)
+
+The simplest and most reliable setup. Claude Desktop launches the Python script directly as a subprocess via **stdio** — no Docker, no ports, no intermediaries.
+
+### Claude Desktop
+
+Edit `claude_desktop_config.json`:
+
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "garmin": {
+      "command": "python3",
+      "args": ["/full/path/to/garmin_mcp_server.py"],
+      "env": {
+        "GARMIN_EMAIL": "your@email.com",
+        "GARMIN_PASSWORD": "yourpassword"
+      }
+    }
+  }
+}
+```
+
+To find the full path:
+```bash
+cd garmin-mcp-server && pwd
+# e.g. /Users/you/garmin-mcp-server
+# → full path: /Users/you/garmin-mcp-server/garmin_mcp_server.py
+```
+
+Fully restart Claude Desktop (`Cmd+Q` on macOS, not just close the window), then reopen it. The Garmin tools will appear under the 🔨 icon in the input bar.
+
+> After the first successful login, garth saves OAuth tokens to `~/.garth/`.
+> You can then remove the credentials from the config — the server will
+> resume the session automatically on subsequent starts.
+
+### Claude Code
+
+```bash
+export GARMIN_EMAIL="your@email.com"
+export GARMIN_PASSWORD="yourpassword"
+claude mcp add garmin -- python3 /full/path/to/garmin_mcp_server.py
+```
+
+---
+
+## Option 2 — Docker (HTTP mode, remote clients)
+
+Best for hosting the server as a persistent HTTP service — useful for remote AI clients or if you want to keep the server always running independently of Claude Desktop.
+
+> **Note:** Do not use Docker + mcp-remote for Claude Desktop. The bridge
+> outputs log lines to stdout that Claude Desktop tries to parse as JSON,
+> causing connection errors. Use Option 1 for Claude Desktop.
+
+### Build
+
+```bash
+docker build -t garmin-mcp-server .
+# or with buildx:
+docker buildx build -t garmin-mcp-server .
+```
+
+### First run (credentials required)
 
 ```bash
 docker run -d \
@@ -48,7 +115,7 @@ docker run -d \
   garmin-mcp-server
 ```
 
-**Subsequent runs** (tokens are saved, no credentials needed):
+### Subsequent runs (tokens already saved)
 
 ```bash
 docker run -d \
@@ -58,85 +125,12 @@ docker run -d \
   garmin-mcp-server
 ```
 
-The server starts in HTTP mode at `http://localhost:8000/mcp`.
+The server starts at `http://localhost:8000/mcp`.
 
-#### Build the image
-
-```bash
-git clone https://github.com/mau240987/garmin-mcp-server.git
-cd garmin-mcp-server
-docker build -t garmin-mcp-server .
-```
-
-#### Connect to Claude Desktop
-
-Claude Desktop can connect to HTTP MCP servers using [mcp-remote](https://www.npmjs.com/package/mcp-remote). Add to your `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "garmin": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote", "http://localhost:8000/mcp"]
-    }
-  }
-}
-```
-
-Then restart Claude Desktop. You should see the Garmin tools available (hammer icon in the input bar).
-
----
-
-### Option 2 — Direct Python (stdio)
-
-Best for Claude Desktop / Claude Code without Docker.
-
-#### Install
+### Or with Docker Compose
 
 ```bash
-git clone https://github.com/mau240987/garmin-mcp-server.git
-cd garmin-mcp-server
-pip install -r requirements.txt
-```
-
-#### Claude Desktop
-
-Add to `claude_desktop_config.json`:
-
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "garmin": {
-      "command": "python",
-      "args": ["/full/path/to/garmin_mcp_server.py"],
-      "env": {
-        "GARMIN_EMAIL": "your@email.com",
-        "GARMIN_PASSWORD": "yourpassword"
-      }
-    }
-  }
-}
-```
-
-> After the first login, garth tokens are saved in `~/.garth/`. You can then remove the credentials from the config and the server will use the saved tokens.
-
-#### Claude Code
-
-```bash
-export GARMIN_EMAIL="your@email.com"
-export GARMIN_PASSWORD="yourpassword"
-claude mcp add garmin -- python /path/to/garmin_mcp_server.py
-```
-
-#### HTTP mode (no Docker)
-
-```bash
-export GARMIN_EMAIL="your@email.com"
-export GARMIN_PASSWORD="yourpassword"
-python garmin_mcp_server.py --transport http --port 8000
+GARMIN_EMAIL=your@email.com GARMIN_PASSWORD=yourpassword docker compose up -d
 ```
 
 ---
@@ -145,27 +139,27 @@ python garmin_mcp_server.py --transport http --port 8000
 
 ```
 First run                          Subsequent runs
-─────────                          ────────────────
-GARMIN_EMAIL + PASSWORD             (not needed)
+─────────────────────              ────────────────────
+GARMIN_EMAIL + PASSWORD            (not needed)
         │                                │
         ▼                                ▼
-   garminconnect                   garth tokens
-   OAuth login                    from ~/.garth/
+  garminconnect login            garth tokens on disk
+        │                          (~/.garth/ or volume)
+        ▼                                │
+  Save OAuth tokens ──────────────►  Resume session
         │                                │
         ▼                                ▼
-   Save tokens ──────────────────► Resume session
-   to ~/.garth/                          │
-        │                                ▼
-        ▼                          Ready to use
-   Ready to use
+   Ready to use                    Ready to use
 ```
 
-Credentials are only needed **once**. After the first successful login, OAuth tokens are persisted by [garth](https://github.com/matin/garth) (~1 year lifetime). No passwords are stored.
+Credentials are only needed **once**. After the first login, OAuth tokens
+are persisted by [garth](https://github.com/matin/garth) with a ~1 year
+lifetime. No passwords are ever stored on disk.
 
-If your account has MFA enabled, do the first login interactively:
+If your account has **MFA** enabled, run the interactive login once first:
 
 ```bash
-python -c "from garminconnect import Garmin; g = Garmin('email', 'pass'); g.login()"
+python3 -c "from garminconnect import Garmin; g = Garmin('email', 'pass'); g.login()"
 ```
 
 ---
@@ -242,11 +236,13 @@ The `push_workout` tool accepts a JSON array of steps:
 
 | `primary` | Behavior on watch |
 |---|---|
-| `"hr"` | Heart rate = main gauge, pace = secondary |
-| `"pace"` | Pace = main gauge, HR = secondary |
+| `"hr"` | Heart rate is the main gauge, pace is secondary |
+| `"pace"` | Pace is the main gauge, HR is secondary |
 | `"none"` | No target (feel-based effort) |
 
-Both targets are displayed simultaneously on the watch. The `targetValueOne/Two` fields are hoisted to the step root level, which is required for Garmin to correctly parse dual targets.
+Both targets are shown simultaneously on the watch. The `targetValueOne/Two`
+fields are hoisted to the step root level — required for Garmin to correctly
+parse dual targets.
 
 ---
 
@@ -259,11 +255,10 @@ Both targets are displayed simultaneously on the watch. The `targetValueOne/Two`
 
 "Create a tempo run for tomorrow: 15 min warmup,
  4x1km at 5:00/km with 2min recovery, 10 min cooldown.
- HR primary on easy parts (130-147), pace primary on intervals."
+ HR primary on easy parts, pace primary on intervals."
 
-"Push a 4-week training plan: Tuesday easy 10km,
- Thursday progressive 12km, Sunday long run
- starting at 20km and adding 2km per week."
+"Push a 4-week training plan starting Monday: Tuesday easy 10km,
+ Thursday progressive 12km, Sunday long run growing from 20 to 30km."
 
 "What's my training load for the last 30 days?"
 
@@ -272,9 +267,33 @@ Both targets are displayed simultaneously on the watch. The `targetValueOne/Two`
 
 ---
 
+## Troubleshooting
+
+**`ModuleNotFoundError`** — dependencies not installed in the right environment:
+```bash
+pip install -r requirements.txt
+# if using a venv, use its full python path in the config:
+# "command": "/Users/you/garmin-mcp-server/.venv/bin/python3"
+```
+
+**`RuntimeError: Missing Garmin credentials`** — no saved tokens and no env vars set.
+Add `GARMIN_EMAIL` and `GARMIN_PASSWORD` to the config for the first login.
+
+**`MFA / 2FA error`** — run the interactive login once to complete MFA:
+```bash
+python3 -c "from garminconnect import Garmin; g = Garmin('email', 'pass'); g.login()"
+```
+
+**Tools not appearing in Claude Desktop** — make sure you fully quit (`Cmd+Q`)
+and restart Claude Desktop after editing the config.
+
+---
+
 ## Disclaimer
 
-This project is not affiliated with, endorsed by, or sponsored by Garmin Ltd. It uses `garminconnect`, which relies on reverse-engineered endpoints. Use at your own risk, for personal use only. Garmin may change their API at any time, which could break this server.
+This project is not affiliated with, endorsed by, or sponsored by Garmin Ltd.
+It uses `garminconnect`, which relies on reverse-engineered endpoints.
+Use at your own risk, for personal use only.
 
 ## License
 
