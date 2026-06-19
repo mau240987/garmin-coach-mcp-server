@@ -307,4 +307,4 @@ Use at your own risk, for personal use only.
 
 ## License
 
-MIT
+AGPL-3.0
