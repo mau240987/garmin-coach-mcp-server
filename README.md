@@ -1,5 +1,10 @@
 # garmin-mcp-server
 
+![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![MCP](https://img.shields.io/badge/MCP-compatible-8A2BE2.svg)
+![PyPI](https://img.shields.io/pypi/v/garmin-mcp-server.svg)
+
 MCP Server for Garmin Connect — read activities, health metrics, and push structured training plans from any AI assistant that supports the [Model Context Protocol](https://modelcontextprotocol.io).
 
 Built on the battle-tested [garminconnect](https://github.com/cyberjunky/python-garminconnect) Python library.
@@ -40,6 +45,21 @@ All tools include automatic retry with exponential backoff:
 - A Garmin Connect account
 - A Garmin device (for workout sync)
 
+### Install via pip
+
+```bash
+pip install garmin-mcp-server
+```
+
+This installs the `garmin-mcp-server` command. You can also run it without
+installing using [uvx](https://docs.astral.sh/uv/):
+
+```bash
+uvx garmin-mcp-server
+```
+
+### Or from source
+
 ```bash
 git clone https://github.com/mau240987/garmin-mcp-server.git
 cd garmin-mcp-server
@@ -58,6 +78,24 @@ Edit `claude_desktop_config.json`:
 
 - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+**If installed via pip** (cleanest):
+
+```json
+{
+  "mcpServers": {
+    "garmin": {
+      "command": "garmin-mcp-server",
+      "env": {
+        "GARMIN_EMAIL": "your@email.com",
+        "GARMIN_PASSWORD": "yourpassword"
+      }
+    }
+  }
+}
+```
+
+**If running from source**, point to the script directly:
 
 ```json
 {

@@ -888,7 +888,7 @@ def delete_plan_workouts(name_contains: str = "") -> str:
 # Entry point
 # ============================================================
 
-if __name__ == "__main__":
+def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Garmin MCP Server")
@@ -903,3 +903,7 @@ if __name__ == "__main__":
         mcp.settings.host = args.host
         mcp.settings.port = args.port
         mcp.run(transport="streamable-http")
+
+
+if __name__ == "__main__":
+    main()
