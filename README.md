@@ -1,4 +1,4 @@
-# garmin-mcp-server
+# garmin-coach-mcp-server
 
 <!-- mcp-name: io.github.mau240987/garmin-mcp-server -->
 
